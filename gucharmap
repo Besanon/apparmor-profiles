@@ -1,0 +1,44 @@
+# apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
+# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# SPDX-License-Identifier: GPL-2.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+@{exec_path} = @{bin}/gucharmap
+profile gucharmap @{exec_path} flags=(attach_disconnected, complain) {
+  include <abstractions/base>
+  include <abstractions/app/bwrap-glycin>
+  include <abstractions/consoles>
+  include <abstractions/dconf>
+  include <abstractions/fonts-strict>
+  include <abstractions/graphics>
+  include <abstractions/fontconfig-cache-read>
+  include <abstractions/nameservice-strict>
+
+  signal (read) set=(kill,term) peer=lxqt-session,
+
+  @{exec_path} mr,
+
+  @{bin}/bwrap                          Px -> gucharmap//&glycin,
+  @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> gucharmap//&glycin//&glycin//loaders,
+
+  /usr/share/icons/{,**} r,
+  /usr/share/glib-2.0/schemas/gschemas.compiled r,
+
+  @{PROC}/@{pid}/cgroup r,
+  owner @{PROC}/@{pid}/maps r,
+
+  @{sys}/fs/cgroup/user.slice/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
+
+  owner /tmp/gdk-pixbuf-glycin-tmp.@{rand6} rw,
+
+}
+
+# vim:syntax=apparmor
+  
+
