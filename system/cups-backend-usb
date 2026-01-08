@@ -1,0 +1,62 @@
+# apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2022-2024 Alexandre Pujol <alexandre@pujol.io>
+# Copyright (C) 2025 Besanon  <m231009ts@mailfence.com>
+# SPDX-License-Identifier: GPL-2.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+@{exec_pathcu26} = @{lib}/cups/backend/usb
+profile cups-backend-usb @{exec_pathcu26} {
+  include <abstractions/base>
+  include <abstractions/devices-usb>
+
+  capability net_admin,
+  capability sys_admin,
+
+  network netlink raw,
+
+  signal (receive) set=(kill,term) peer=cupsd, #NEW
+
+  @{exec_pathcu26} mr,
+
+  /usr/share/cups/usb/{,**} r,
+
+  /etc/cups/ppd/*.ppd r,
+  /etc/papersize r,
+  /etc/paperspecs r,
+
+  @{sys}/devices/@{pci}/usb@{int}/devnum r,
+  @{sys}/devices/@{pci}/usb@{int}/busnum r,
+  @{sys}/devices/@{pci}/usb@{int}/speed r,
+  @{sys}/devices/@{pci}/usb@{int}/**/busnum r,
+  @{sys}/devices/@{pci}/usb@{int}/**/devnum r,
+  @{sys}/devices/@{pci}/usb@{int}/**/speed r,
+
+#  @{sys}/devices/@{pci}/usb1/{,devnum, busnum} r,
+#  @{sys}/devices/@{pci}/usb1/1-4/busnum r,
+#  @{sys}/devices/@{pci}/usb1/1-6/busnum r,
+#  @{sys}/devices/@{pci}/usb1/1-7/busnum r,
+#  @{sys}/devices/@{pci}/usb2/2-1/busnum r,#
+#  @{sys}/devices/@{pci}/usb3/devnum r,
+
+#  @{sys}/devices/@{pci}/usb1/1-1/busnum r,
+#  @{sys}/devices/@{pci}/usb1/1-2/busnum r,
+
+#  @{sys}/devices/@{pci}/usb2/2-1/busnum r,
+#  @{sys}/devices/@{pci}/usb2/2-3/busnum r,
+#  @{sys}/devices/@{pci}/usb1/1-2/devnum r,
+#  @{sys}/devices/@{pci}/usb2/2-3/devnum r,
+#  @{sys}/devices/@{pci}/usb2/busnum r,
+#  @{sys}/devices/@{pci}/usb2/2-4/busnum r,
+#  @{sys}/devices/@{pci}/usb2/2-6/busnum r,
+#  @{sys}/devices/@{pci}/usb2/2-7/busnum r,
+#  @{sys}/devices/@{pci}/usb3/busnum r,
+#  @{sys}/devices/@{pci}/usb1/busnum r,
+#  @{sys}/devices/@{pci}/usb1/1-1/speed r,
+
+  include if exists <local/cups-backend-usb>
+}
+
+# vim:syntax=apparmor
