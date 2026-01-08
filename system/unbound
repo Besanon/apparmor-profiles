@@ -7,8 +7,8 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_pathunb} = @{bin}/unbound
-profile unbound @{exec_pathunb} flags=(attach_disconnected) {
+@{exec_path} = @{bin}/unbound
+profile unbound @{exec_path} flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/bus-system>
   include <abstractions/bus/system/org.freedesktop.login1>
@@ -35,7 +35,7 @@ profile unbound @{exec_pathunb} flags=(attach_disconnected) {
 
   signal (receive) set=(term, cont) peer=runsv,
 
-  @{exec_pathunb} mr,
+  @{exec_path} mr,
 
   /etc/unbound/{,**} r,
 
