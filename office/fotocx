@@ -1,0 +1,90 @@
+# apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
+# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# SPDX-License-Identifier: GPL-2.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+profile @{bin}/fotocx {
+  include <abstractions/base>
+  include <abstractions/dbus-accessibility>
+  include <abstractions/dconf-write>
+  include <abstractions/fonts>
+  include <abstractions/graphics>
+  include <abstractions/consoles>
+  include <abstractions/qt5>
+  include <abstractions/nameservice>
+  include <abstractions/user-read-strict>
+  include <abstractions/user-write-strict>
+  include <abstractions/X-strict>
+
+  @{bin}/fotocx     			mr,
+
+  @{bin}/{,ba,da}sh rix,
+  @{bin}/cp         rix,
+  @{bin}/df         rix,
+  @{bin}/exiftool   rPx,
+  @{bin}/grep       rix,
+  @{bin}/lscpu      rPx,
+  @{bin}/gsettings  rPx,
+  @{bin}/rm         rix,
+  @{bin}/pidof      rPx,
+  @{bin}/gfind      rix,
+  @{bin}/mkdir      rix,
+  @{bin}/which      rPx,
+
+  /usr/share/hwdata/pnp.ids 			r,
+  /usr/share/fotocx/{,**} 			rw,
+  /usr/share/glib-2.0/schemas/gschemas.compiled r,
+  /usr/share/icons/{,**}			r,
+  /usr/share/mime/{,**}				r,
+  /usr/share/pixmaps/ 				r,
+  /usr/share/gvfs/remote-volume-monitors/ 	r,
+  /usr/share/gvfs/remote-volume-monitors/udisks2.monitor r,
+
+  /etc/machine-id 				r,
+  /etc/fstab 					r,
+
+  /var/lib/dbus/machine-id 			r,
+
+  owner @{HOME}/.icons/ r,
+  owner @{HOME}/.icons/default/index.theme r,
+  owner @{HOME}/.fotocx/ r,
+  owner @{HOME}/.fotocx/{,**} rw,
+  owner @{HOME}/.Xdefaults r,
+  owner @{HOME}/zbacktrace rw,
+
+  owner @{user_config_dirs}/photoflare.io/{,**}         rwk,
+  owner @{user_config_dirs}/photoflare.io/photoflare.conf.@{rand6} l -> @{user_config_dirs}/photoflare.io/#@{int},
+  owner @{user_config_dirs}/user-dirs.dirs 		r,
+  owner @{user_config_dirs}/#*				rwk,
+  owner @{user_config_dirs}/ibus/bus/ 			r,
+  owner @{user_config_dirs}/ibus/bus/*fb-unix-0 r,
+
+  owner @{user_cache_dirs}/thumbnails/normal/*.png r,
+
+  owner @{user_share_dirs}/sddm/xorg-session.log rw,
+  owner @{user_share_dirs}/sddm/wayland-session.log a,
+  owner @{user_share_dirs}/recently-used.xbel r,
+
+  @{sys}/devices/@{pci}/vendor 				r,
+  @{sys}/devices/@{pci}/vice 				r,
+  @{sys}/devices/@{pci}/uevent 				r,
+  @{sys}/devices/@{pci}/revision 			r,
+  @{sys}/devices/@{pci}/subsystem_vendor 		r,
+  @{sys}/devices/@{pci}/subsystem_device 		r,
+  @{sys}/devices/@{pci}/uevent 				r,
+  @{sys}/devices/@{pci}/revision 			r,
+
+  @{PROC}/ r,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/mounts r,
+
+  owner /tmp/qtsingleapp-Photo*				rwk,
+
+  include if exists <local/fotocx> 
+}
+
+# vim:syntax=apparmor
