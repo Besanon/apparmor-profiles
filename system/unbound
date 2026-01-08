@@ -1,0 +1,58 @@
+# apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2021-2024 Alexandre Pujol <alexandre@pujol.io>
+# Copyright (C) 2024 Barmogund <set508@proton.me>
+# SPDX-License-Identifier: GPL-3.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+@{exec_pathunb} = @{bin}/unbound
+profile unbound @{exec_pathunb} flags=(attach_disconnected) {
+  include <abstractions/base>
+  include <abstractions/bus-system>
+  include <abstractions/bus/system/org.freedesktop.login1>
+  include <abstractions/nameservice-strict>
+  include <abstractions/p11-kit>
+  include <abstractions/ssl_certs>
+  include <abstractions/common/systemd>
+
+  capability net_bind_service,
+  capability net_raw,
+  capability setpcap,
+  capability sys_chroot,
+
+  network unix stream,
+  network unix dgram,
+
+  network inet dgram,
+  network inet stream,
+  network inet6 dgram,
+  network inet6 stream,
+  network netlink raw,
+
+  #aa:dbus own bus=system name=org.freedesktop.resolve1
+
+  signal (receive) set=(term, cont) peer=runsv,
+
+  @{exec_pathunb} mr,
+
+  /etc/unbound/{,**} r,
+
+  @{run}/systemd/netif/links/* r,
+  @{run}/systemd/notify rw,
+  @{run}/unbound.pid rw,
+
+  @{PROC}/@{pid}/cgroup r,
+  @{PROC}/ r,
+  @{PROC}/pressure/* r,
+  @{PROC}/sys/kernel/hostname r,
+  @{PROC}/sys/net/ipv{4,6}/conf/all/disable_ipv{4,6} r,
+  owner @{PROC}/@{pids}/fd/ r,
+
+  /dev/pts/@{int} rw,
+
+  include if exists <local/unbound>
+}
+
+# vim:syntax=apparmor

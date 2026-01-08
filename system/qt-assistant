@@ -1,0 +1,21 @@
+# apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2023 Alexandre Pujol <alexandre@pujol.io>
+# SPDX-License-Identifier: GPL-2.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+@{exec_pathqass} = @{bin}/qdbus @{lib}/qt6/bin/assistant
+profile qassistant @{exec_pathqass} {
+  include <abstractions/base>
+  include <abstractions/bus-session>
+
+  @{exec_pathqass} mr,
+
+  owner @{user_share_dirs}/sddm/wayland-session.log w,
+
+  include if exists <local/qass>
+}
+
+# vim:syntax=apparmor

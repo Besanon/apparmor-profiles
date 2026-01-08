@@ -1,0 +1,228 @@
+# apparmor.d - Full set of apparmor profiles
+# based on https://gitorious.org/tbb-apparmor/tbb-apparmor/
+# Copyright (C) 2023 Radostan Riedel <raybuntu@googlemail.com>
+# Copyright (c) 2013-2023 Micah Lee <micah@micahflee.com>
+# Copyright (c) 2024 Tor Project
+# Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
+# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# SPDX-License-Identifier: GPL-2.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+@{torbrowser_firefox_executable} = /opt/tor/tor-browser/Browser/firefox.real /opt/tormedium/tor-browser/Browser/firefox.real
+@{lib_dirs} = /opt/tor/tor-browser/Browser/
+
+profile torbrowser_firefox @{torbrowser_firefox_executable} {
+  include <abstractions/audio-client>
+#  include <abstractions/app/bwrap-glycin>
+  include <abstractions/dri-enumerate>
+  include <abstractions/gnome>
+  include <abstractions/ibus>
+  include <abstractions/graphics-full>
+  include <abstractions/bus-session>
+  include <abstractions/X-strict>
+
+  network netlink raw,
+  network tcp,
+
+  ptrace (trace) peer=@{profile_name},
+  signal (receive, send) set=("term") peer=@{profile_name},
+  signal (receive) set=term peer=lxqt-session,
+
+#  @{bin}/bwrap                          Px -> torbrowser_firefox//&glycin,
+#  @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> torbrowser_firefox//&glycin//&glycin//loaders,
+
+  
+  /var/cache/fontconfig/ rw,
+
+  /dev/ r,
+  /dev/shm/ r,
+
+  owner @{PROC}/@{pid}/cgroup r,
+  owner @{PROC}/@{pid}/environ r,
+  owner @{PROC}/@{pid}/fd/ r,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/oom_score_adj rw,
+  owner @{PROC}/@{pid}/smaps r,
+  owner @{PROC}/@{pid}/stat r,
+  owner @{PROC}/@{pid}/statm r,
+  owner @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/task/*/stat r,
+  @{PROC}/sys/kernel/random/uuid r,
+
+  owner /opt/tor/tor-browser/  r,
+  owner /opt/tor/tor-browser/* r,
+  owner /opt/tor/tor-browser/.** rwk,
+  owner /opt/tor/tor-browser/update.test/ rwk,
+  owner @{torbrowser_lib_dirs}/.** rwk,
+  owner @{torbrowser_lib_dirs}/ rw,
+  owner @{torbrowser_lib_dirs}/** rwk,
+  owner @{torbrowser_lib_dirs}.bak/ rwk,
+  owner @{torbrowser_lib_dirs}.bak/** rwk,
+  owner @{torbrowser_lib_dirs}/*.so mr,
+  owner @{torbrowser_lib_dirs}/.cache/fontconfig/ rwk,
+  owner @{torbrowser_lib_dirs}/.cache/fontconfig/** rwkl,
+  owner @{torbrowser_lib_dirs}/browser/** r,
+  owner @{torbrowser_lib_dirs}/{,browser/}components/*.so mr,
+  owner @{torbrowser_lib_dirs}/Downloads/ rwk,
+  owner @{torbrowser_lib_dirs}/Downloads/** rwk,
+  owner @{torbrowser_lib_dirs}/firefox rix,
+  owner @{torbrowser_lib_dirs}/{,TorBrowser/UpdateInfo/}updates/[0-9]*/* rw,
+  owner @{torbrowser_lib_dirs}/{,TorBrowser/UpdateInfo/}updates/[0-9]*/{,MozUpdater/bgupdate/}updater ix,
+  owner @{torbrowser_lib_dirs}/updater ix,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Data/Browser/.parentwritetest rw,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Data/Browser/profiles.ini r,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Data/Browser/profile.default/{,**} rwk,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Data/fontconfig/fonts.conf r,
+  owner @{torbrowser_lib_dirs}/fonts/* l,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Tor/tor px,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Tor/ r,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Tor/*.so mr,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Tor/*.so.* mr,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Tor/libstdc++/*.so mr,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Tor/libstdc++/*.so.* mr,
+  owner /opt/tor/tor-browser/Browser/TorBrowser/Data/Tor/torrc rw,
+
+  # parent Firefox process when restarting after upgrade, Web Content processes
+  owner @{torbrowser_firefox_executable} pxmr -> torbrowser_firefox,
+
+  owner /opt/tor/tor-browser/Browser/TorBrowser/Tor/PluggableTransports/lyrebird rix,  
+
+  /etc/mailcap r,
+  /etc/mime.types r,
+
+  /usr/share/ r,
+  /usr/share/glib-2.0/schemas/gschemas.compiled r,
+  /usr/share/glycin-loaders/2+/conf.d/{,**} r,
+  /usr/share/mime/ r,
+  /usr/share/themes/ r,
+  /usr/share/applications/** rk,
+  /usr/share/gnome/applications/ r,
+  /usr/share/gnome/applications/kde4/ r,
+  /usr/share/poppler/cMap/ r,
+  /etc/xdg/mimeapps.list r,
+
+  # Distribution homepage
+  /usr/share/homepage/ r,
+  /usr/share/homepage/** r,
+
+  /sys/bus/pci/devices/ r,
+  @{sys}/devices/pci[0-9]*/**/irq r,
+  /sys/devices/system/cpu/ r,
+  /sys/devices/system/cpu/present r,
+  /sys/devices/system/node/ r,
+  /sys/devices/system/node/node[0-9]*/meminfo r,
+  /sys/fs/cgroup/cpu,cpuacct/{,user.slice/}cpu.cfs_quota_us r,
+  @{sys}/fs/cgroup/cpu/cpu.cfs_quota_us r,
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-1.scope/cpu.max r,
+
+  owner @{PROC}/@{pid}/oom_score_adj r,
+  @{PROC}/sys/net/core/somaxconn r,
+
+  # Should use abstractions/gstreamer instead once merged upstream
+  /etc/udev/udev.conf r,
+  /run/udev/data/+pci:* r,
+  /sys/devices/pci[0-9]*/**/uevent r,
+  owner /{dev,run}/shm/shmfd-* rw,
+
+  # Required for multiprocess Firefox (aka Electrolysis, i.e. e10s)
+  owner /{dev,run}/shm/org.chromium.* rw,
+  owner /dev/shm/org.mozilla.ipc.[0-9]*.[0-9]* rw, # for Chromium IPC
+
+  # Required for Wayland display protocol support
+  owner /dev/shm/wayland.mozilla.ipc.[0-9]* rw,
+  owner /dev/pts/@{u8} rw, 
+  /dev/pts/@{u8} rw, 
+
+  owner /tmp/Temp-@{uuid}/ rw,
+  owner "/tmp/Tor ProjectUpdateLock-*" rw,
+  
+  # Silence denial logs about permissions we don't need
+  deny @{HOME}/.cache/fontconfig/ rw,
+  deny @{HOME}/.cache/fontconfig/** rw,
+  deny @{HOME}/.config/gtk-2.0/ rw,
+  deny @{HOME}/.config/gtk-2.0/** rw,
+  deny @{PROC}/@{pid}/net/route r,
+  deny owner @{user_config_dirs}/lxqt-mimeapps.list r,
+  deny owner "@{user_cache_dirs}/@{multiarch}" rw,
+  deny /sys/devices/virtual/block/*/uevent r,
+  deny /sys/devices/system/cpu/cpufreq/policy[0-9]*/cpuinfo_max_freq r,
+  deny /sys/devices/system/cpu/*/cache/index[0-9]*/size r,
+  deny /run/user/[0-9]*/dconf/user rw,
+  deny /usr/bin/lsb_release x,
+# NEU :
+ # Due to the nature of the browser, we silence much more than for Firefox.
+  owner "@{user_config_dirs}/chromium/Local State" r,
+  owner @{user_config_dirs}/chromium/Default/Bookmarks r,
+  deny capability sys_admin,
+  deny capability sys_chroot,
+  deny network inet dgram, # TOR does not work over UDP
+  deny network inet6 dgram,
+  deny dbus (send receive) bus=session path=/ca/desrt/dconf/Writer/user,
+  deny @{bin}/lsb_release x,
+  deny @{lib_dirs}/crashreporter x,
+  deny @{lib_dirs}/glxtest x,
+  deny /opt/tormedium/tor-browser/Browser/glxtest x,
+  deny @{lib_dirs}/minidump-analyzer x,
+  deny @{lib_dirs}/pingsender x,
+  deny /etc/pulse/client.conf r,
+  deny /usr/bin/pulseaudio x,
+  deny /etc/pulse/client.conf r,
+  deny /usr/share/dconf/** r,
+  deny /etc/dconf/** r,
+  deny /etc/fstab r,
+  deny /etc/group r,
+  deny /etc/host.conf r,
+  deny /etc/hosts r,
+  deny /etc/machine-id r,
+  deny /etc/mailcap r,
+  deny /etc/nsswitch.conf r,
+  deny /etc/os-release r,
+  deny /etc/passwd r,
+  deny /etc/pulse/client.conf r,
+  deny /etc/resolv.conf r,
+  deny /var/lib/dbus/machine-id r,
+  deny owner @{user_config_dirs}/dconf/user r,
+  deny owner @{user_config_dirs}/gtk-*/{,**} rw,
+  deny owner @{run}/user/@{uid}/dconf/ rw,
+  deny owner @{run}/user/@{uid}/dconf/user rw,
+  deny @{sys}/class/input/ r,
+  deny @{sys}/devices/system/cpu/*/cache/index@{int}/size r,
+  deny @{sys}/devices/system/cpu/cpufreq/policy@{int}/cpuinfo_max_freq r,
+    deny @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
+    deny @{sys}/devices/virtual/dmi/id/product_name r,
+    deny @{sys}/devices/virtual/dmi/id/product_sku r,
+    deny @{sys}/devices/@{pci}/drm/card1/ r,
+    deny @{sys}/devices/@{pci}/ r,
+    deny @{sys}/devices/@{pci}/drm/renderD128/ r,
+  deny @{sys}/devices/virtual/block/*/uevent r,
+  deny @{PROC}/@{pid}/net/if_inet6 r,
+  deny @{PROC}/@{pid}/net/route r,
+  deny owner @{PROC}/@{pid}/{gid,uid}_map w,
+  deny owner @{PROC}/@{pid}/setgroups w,
+  deny @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
+  deny @{sys}/fs/cgroup/user.slice/cpu.max r,
+
+# Ende NEU
+
+  # Xfce4
+  /etc/xfce4/defaults.list r,
+  /usr/share/xfce4/applications/ r,
+
+  # u2f (tested with Yubikey 4)
+  /sys/class/ r,
+  /sys/bus/ r,
+  /sys/class/hidraw/ r,
+  /run/udev/data/c24{5,7,9}:* r,
+  /dev/hidraw* rw,
+
+  # Remove these rules once we can assume abstractions/vulkan is recent enough
+  # to include them
+  /etc/glvnd/egl_vendor.d/{*,.json} r,
+  /usr/share/glvnd/egl_vendor.d/{,*.json} r,
+
+}
+
+# vim:syntax=apparmor
