@@ -1,0 +1,126 @@
+# apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2020-2021 Mikhail Morfikov
+# Copyright (C) 2024 Besanon <m231009ts@mailfence.com>
+# SPDX-License-Identifier: GPL-2.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+@{exec_pathxfe} = @{bin}/xfe 
+profile xfe @{exec_pathxfe} flags=(attach_disconnected) {
+  include <abstractions/base>
+  include <abstractions/app-launcher-user>
+  include <abstractions/bus-accessibility>
+#  include <abstractions/bus-session>
+  include <abstractions/deny-sensitive-home>
+  include <abstractions/fontconfig-cache-read>
+  include <abstractions/nameservice-strict>
+  include <abstractions/trash-strict>
+  include <abstractions/lxqt>
+
+  network netlink raw,
+
+  signal (send) set=(term, kill),
+  signal (read) set=(kill,term) peer=lxqt-session,
+
+  @{exec_pathxfe} mr,
+
+  #aa:dbus own bus=session name=org.freedesktop.FileManager1
+
+  @{bin}/dbus-launch    rCx -> dbus,
+  @{shells_path}    	rix,
+  @{bin}/xfw		rix,
+  @{bin}/find 		rix,
+  @{bin}/gfind 		rix,
+  @{bin}/localc 	rix,
+  @{bin}/lowriter 	rix,
+  @{lib}/exec/menu-cache/menu-cached 		rix,
+
+  /mnt/ r,
+ 
+  @{PROC}/ r,
+  owner @{PROC}/@{pid}/ r,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/mounts r,
+  owner @{PROC}/@{pid}/fd/ r,
+  owner @{PROC}/@{pid}/cgroup r,
+  owner @{PROC}/@{pid}/task/ r,
+  owner @{PROC}/@{pid}/map_files/ r,
+  owner @{PROC}/@{pid}/fdinfo/ r,
+  owner @{PROC}/@{pid}/ns/ r,
+  owner @{PROC}/@{pid}/net/ r,
+
+  @{sys}/ r,
+  @{sys}/bus/ r,
+  @{sys}/bus/*/devices/ r,
+  @{sys}/class/*/ r,
+  @{sys}/devices/**/uevent r,
+
+  @{sys}/fs/cgroup/{,**} r,
+
+        /         r,
+        /boot/    r,
+        /boot/**  r,
+  owner /boot/**  rw,
+        /etc/     r,
+        /etc/**   r,
+  owner /etc/**   rw,
+        /home/    r,
+        /home/**  r,
+        /home/**  rw,
+        /lost+found/ r,
+        /lost+found/** r,
+  owner /lost+found/** rw,
+	/media/ r,
+        @{MOUNTS}/   r,
+        @{MOUNTS}/** r,
+  owner @{MOUNTS}/** rw,
+        /opt/     r,
+        /opt/**   r,
+  owner /opt/**   rw,
+        /root/    r,
+        /root/**  r,
+  owner /root/**  rw,
+        @{run}/   r,
+        @{run}/** r,
+  owner @{run}/** rw,
+        /srv/     r,
+        /srv/**   r,
+  owner /srv/**   rw,
+        /tmp/     r,
+        /tmp/**   r,
+  owner /tmp/**   rw,
+        /usr/     r,
+        /usr/**   r,
+  owner /usr/**   rw,
+        /var/     r,
+        /var/**   r,
+  owner /var/**   rw,
+
+  /dev/ r,
+  /dev/tty rw,
+  owner /dev/tty@{u8} rw,
+
+  owner @{PROC}/@{pid}/attr/ r,
+
+  @{sys}/bus/ r,
+  @{sys}/bus/*/devices/ r,
+  @{sys}/class/*/ r,
+  @{sys}/devices/**/uevent r,
+
+  owner /dev/tty@{u8} rw,
+
+  profile dbus {
+    include <abstractions/base>
+    include <abstractions/nameservice-strict>
+
+    @{bin}/dbus-launch   mr,
+
+    include if exists <local/xfe_dbus>
+  }
+
+ include if exists <local/xfe>
+}
+
+# vim:syntax=apparmor
