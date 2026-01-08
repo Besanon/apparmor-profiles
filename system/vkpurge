@@ -6,8 +6,8 @@ abi <abi/3.0>,
 
 include <tunables/global>
 
-@{exec_pathxbpsvk} = @{bin}/xbps-install 
-profile vkpurge @{exec_pathxbpsvk} flags=(attach_disconnected) {
+@{exec_path} = @{bin}/vkpurge
+profile vkpurge @{exec_path flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/bus-system>
   include <abstractions/bus/org.freedesktop.login1>
@@ -43,7 +43,7 @@ profile vkpurge @{exec_pathxbpsvk} flags=(attach_disconnected) {
        member=Introspect
        peer=(name="{:*,org.freedesktop.DBus}"),
 
-  @{exec_pathxbpsvk} mr,
+  @{exec_path} mr,
   @{lib}exec/xbps-triggers/*  mrix,
 
   @{bin}/ r,
