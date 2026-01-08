@@ -1,0 +1,102 @@
+# apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
+# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# SPDX-License-Identifier: GPL-2.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+@{exec_pathmeld} = @{bin}/meld
+profile meld @{exec_pathmeld} {
+  include <abstractions/base>
+  include <abstractions/app/bwrap-glycin>
+  include <abstractions/consoles>
+  include <abstractions/freedesktop.org>
+  include <abstractions/fonts>
+  include <abstractions/gtk-strict>
+  include <abstractions/qt6>
+  include <abstractions/X-strict>
+  include <abstractions/nameservice-strict>
+  include <abstractions/dconf>
+  include <abstractions/cups-client>
+  include <abstractions/bus-session>
+  include <abstractions/bus-accessibility>
+  include <abstractions/thumbnails-cache-read>
+  include <abstractions/user-read-strict>
+  include <abstractions/user-write-strict>
+
+  signal (read) set=(kill,term) peer=lxqt-session,
+
+  capability fowner,
+  capability mknod,
+
+  dbus send
+  	bus=session
+  	path="/org/gnome/meld"
+  	interface="org.gtk.{Actions,Application}"
+  	peer=(name="org.gnome.meld",label=@{profile_name}),
+  dbus receive
+  	bus=session
+  	path="/org/gnome/meld"
+  	interface="org.gtk.{Actions,Application}"
+  	peer=(name=":[0-9]*.[0-9]*",label=@{profile_name}),
+
+  @{exec_pathmeld}					mr,
+
+  @{bin}/bwrap                          Px -> meld//&glycin,
+  @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> meld//&glycin//&glycin//loaders,
+
+  /bin/env						r,
+  /usr/lib						ix,
+  @{bin}/which						rPx,
+  @{bin}/python3.@{int}					rPx, 
+ 
+  /usr/share/gvfs/remote-volume-monitors/		r,
+  /usr/bin/						r,
+  /usr/share/meld/{,**}					r,
+  /usr/share/gtksourceview-[2-9]*/{,**}			r,	
+  /usr/share/themes/Default/gtk-3.0/*			r,
+  /usr/lib/cairo/{,**/}					w,	
+  /usr/lib/cairo/**.pyc{,.*}				w,
+
+  /etc/fstab r,
+
+  owner /var/tmp/@{rand8}				rw,
+
+  owner @{user_config_dirs}/ibus/bus/{,**} r,
+  owner @{user_config_dirs}/meld/{,**}			rw,
+
+  owner @{user_share_dirs}/meld/{,**}			rw,
+  owner @{user_share_dirs}/ r,
+  owner @{user_share_dirs}/sddm/xorg-session.log 	w,
+  owner @{user_share_dirs}/sddm/wayland-session.log 	w,
+
+  owner @{run}/user/@{uid}/dconf/user rw,
+
+  /tmp/							r,
+  owner /tmp/@{int}					rw,	
+  owner /tmp/@{rand8}					rw, 
+
+  owner @{PROC}/@{pid}/fd/				r,
+  owner @{PROC}/@{pid}/mounts				r,
+  owner @{PROC}/@{pid}/mountinfo			r,
+  owner @{PROC}/@{pid}/stat				r,
+  owner @{PROC}/@{pid}/cgroup 				r,
+
+  @{sys}/fs/cgroup/user.slice/cpu.max 			r,
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
+
+  owner /dev/shm/{,**}  r,
+  owner /dev/shm/** rwkl -> /dev/shm/sem.@{rand6}, 
+
+  deny /usr/bin/git					x,
+  deny /usr/share/gvfs/remote-volume-monitors/udisks2.monitor rwk,
+  deny @{lib}/python3.@{int}/{,**} w,
+  deny @{HOME}/.* r,
+
+  include if exists <local/meld>
+}
+
+# vim:syntax=apparmor
