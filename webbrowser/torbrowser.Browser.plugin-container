@@ -1,0 +1,103 @@
+# apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
+# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# SPDX-License-Identifier: GPL-2.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+@{torbrowser_firefox_executable} = /opt/tor/tor-browser/Browser/firefox.real /opt/tormedium/tor-browser/Browser/firefox.real
+
+profile torbrowser_plugin_container {
+  include <abstractions/gnome>
+
+  signal (receive) set=("term") peer=torbrowser_firefox,
+
+  deny /etc/host.conf r,
+  deny /etc/hosts r,
+  deny /etc/nsswitch.conf r,
+  deny /etc/resolv.conf r,
+  deny /etc/passwd r,
+  deny /etc/group r,
+  deny /etc/mailcap r,
+
+  deny /etc/machine-id r,
+  deny /var/lib/dbus/machine-id r,
+
+  /etc/mime.types r,
+  /usr/share/applications/gnome-mimeapps.list r,
+
+  /dev/shm/ r,
+
+  owner @{PROC}/@{pid}/environ r,
+  owner @{PROC}/@{pid}/fd/ r,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/stat r,
+  owner @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/task/*/stat r,
+  @{PROC}/sys/kernel/random/uuid r,
+
+  owner @{torbrowser_lib_dirs}/*.dat r,
+  owner @{torbrowser_lib_dirs}/*.manifest r,
+  owner @{torbrowser_lib_dirs}/*.so mr,
+  owner @{torbrowser_lib_dirs}/.cache/fontconfig/   rw,
+  owner @{torbrowser_lib_dirs}/.cache/fontconfig/** rw,
+  owner @{torbrowser_lib_dirs}/browser/** r,
+  owner @{torbrowser_lib_dirs}/components/*.so mr,
+  owner @{torbrowser_lib_dirs}/browser/components/*.so mr,
+  owner @{torbrowser_lib_dirs}/defaults/pref/     r,
+  owner @{torbrowser_lib_dirs}/defaults/pref/*.js r,
+  owner @{torbrowser_lib_dirs}/dependentlibs.list r,
+  owner @{torbrowser_lib_dirs}/fonts/   r,
+  owner @{torbrowser_lib_dirs}/fonts/** r,
+  owner @{torbrowser_lib_dirs}/omni.ja r,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Data/Browser/profile.default/extensions/*.xpi r,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Data/Browser/profiles.ini r,
+  owner @{torbrowser_lib_dirs}/TorBrowser/UpdateInfo/updates/[0-9]*/update.{status,version} r,
+  owner @{torbrowser_lib_dirs}/TorBrowser/UpdateInfo/updates/[0-9]/updater rw,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Data/Browser/profile.default/startupCache/* r,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Data/Browser/profile.default/tmp/* rw,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Data/fontconfig/fonts.conf r,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Tor/ r,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Tor/*.so mr,
+  owner @{torbrowser_lib_dirs}/TorBrowser/Tor/*.so.* mr,
+  owner @{torbrowser_lib_dirs}/Downloads/ rwk,
+  owner @{torbrowser_lib_dirs}/Downloads/** rwk,
+
+  owner @{torbrowser_firefox_executable} ixmr -> torbrowser_plugin_container,
+
+  /sys/devices/system/cpu/ r,
+  /sys/devices/system/cpu/present r,
+  /sys/devices/system/node/ r,
+  /sys/devices/system/node/node[0-9]*/meminfo r,
+  deny /sys/devices/virtual/block/*/uevent r,
+
+  # Should use abstractions/gstreamer instead once merged upstream
+  /etc/udev/udev.conf r,
+  /run/udev/data/+pci:* r,
+  /sys/devices/pci[0-9]*/**/uevent r,
+  owner /{dev,run}/shm/shmfd-* rw,
+
+  # Required for multiprocess Firefox (aka Electrolysis, i.e. e10s)
+  owner /{dev,run}/shm/org.chromium.* rw,
+  owner /dev/pts/@{u8}  rw,
+
+  # Deny access to DRM nodes, that's granted by the X abstraction, which is
+  # sourced by the gnome abstraction, that we include.
+  deny /dev/dri/** rwklx,
+
+  # Silence denial logs about permissions we don't need
+  deny /dev/dri/   rwklx,
+  deny @{PROC}/@{pid}/net/route r,
+  deny /sys/devices/system/cpu/cpufreq/policy[0-9]*/cpuinfo_max_freq r,
+  deny /sys/devices/system/cpu/*/cache/index[0-9]*/size r,
+
+  # Silence denial logs about PulseAudio
+  deny /etc/pulse/client.conf r,
+  deny /usr/bin/pulseaudio x,
+
+}
+
+# vim:syntax=apparmor
+
