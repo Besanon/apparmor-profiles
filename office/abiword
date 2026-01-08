@@ -1,0 +1,82 @@
+# apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2015-2022 Mikhail Morfikov
+# Copyright (C) 2021-2024 Alexandre Pujol <alexandre@pujol.io>
+# SPDX-License-Identifier: GPL-2.0-only
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+@{exec_pathabiw} = @{bin}/abiword
+profile abiword @{exec_pathabiw} {
+  include <abstractions/base>
+  include <abstractions/consoles>
+  include <abstractions/bus-session>
+  include <abstractions/bus-accessibility>
+  include <abstractions/bus/session/org.freedesktop.FileManager1>
+  include <abstractions/bus/session/org.gtk.vfs.Mountable>
+  include <abstractions/cups-client>
+  include <abstractions/dconf-write>
+  include <abstractions/enchant>
+  include <abstractions/fonts>
+  include <abstractions/fontconfig-cache-read>
+  include <abstractions/lxqt>
+  include <abstractions/graphics>
+  include <abstractions/nameservice-strict>
+  include <abstractions/thumbnails-cache-read>
+  include <abstractions/user-read-strict>
+  include <abstractions/user-write-strict>
+  
+  signal (receive) peer=lxqt-session,
+
+  @{exec_pathabiw}			mr,
+
+  @{sh_path}        			rix,
+  @{bin}/basename   rix,
+  @{bin}/dirname    rix,
+  @{bin}/{,e}grep       		rix,
+  @{bin}/ls         rix,
+  @{bin}/paperconf  			rix,
+
+  /usr/share/icons/{,**} r,
+  /usr/share/mime/{,**} r,
+  /usr/share/thumbnailers/{,**} r,
+  /usr/share/libfm-qt6/translations/libfm-qt_de.qm r,
+  /usr/share/featherpad/translations/featherpad_de.qm r,
+  /usr/share/abiword-3.0/{,**} r,
+
+  /etc/ r,
+  /etc/fstab r,
+  /etc/cups/client.conf r, 
+  /etc/arch-release r,
+
+  owner @{HOME}/.xscreensaver r,
+  owner @{HOME}/.icons/default/index.theme r,
+
+  owner @{user_config_dirs}/#@{int} rw,
+  owner @{user_config_dirs}/abiword/{,**} rw,
+
+  owner @{user_share_dirs}/ r,
+  owner @{user_share_dirs}/gvfs-metadata/home r,
+  owner @{user_share_dirs}/sddm/xorg-session.log w,
+  owner @{user_share_dirs}/sddm/wayland-session.log w,
+
+  owner @{user_cache_dirs}/thumbnails/ rw,
+
+  /tmp/ r,
+  owner /tmp/#@{int}		rw,
+
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/mounts r,
+
+  /dev/tty						rw,
+  owner /dev/tty@{u8} rw,
+
+  deny owner @{user_share_dirs}/gvfs-metadata/*.log rw,
+  deny owner @{HOME}/.* rw,
+  deny /etc/passwd  r,
+  
+  include if exists <local/abiword>
+}
+
+# vim:syntax=apparmor
