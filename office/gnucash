@@ -8,8 +8,8 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_path} = @{bin}/gnumeric @{bin}/gnumeric-1.12.59
-profile gnumeric @{exec_path} {
+@{exec_pathgnuc} = @{bin}/gnucash @{bin}/gnucash
+profile gnucash @{exec_pathgnuc} {
   include <abstractions/base>
   include <abstractions/consoles>
   include <abstractions/app/bwrap-glycin>
@@ -20,37 +20,43 @@ profile gnumeric @{exec_path} {
   include <abstractions/dconf-write>
   include <abstractions/fonts-strict>
   include <abstractions/fontconfig-cache-read>
+  include <abstractions/gtk-strict>
   include <abstractions/graphics>
   include <abstractions/nameservice-strict>
   include <abstractions/thumbnails-cache-read>
   include <abstractions/user-read-strict>
   include <abstractions/user-write-strict>
-  
+  include <abstractions/X-strict>
+
   signal (read) set=(kill,term) peer=lxqt-session,
 
-  @{exec_path}			mr,
+ @{exec_pathgnuc}                      mr,
 
-  @{bin}/bwrap                          Px -> gnumeric//&glycin,
-  @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> gnumeric//&glycin//&glycin//loaders,
+  @{bin}/bwrap                          Px -> gnucash//&glycin,
+  @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> gnucash//&glycin//&glycin//loaders,
 
-  @{sh_path}        			rix,
-  @{bin}/basename   rix,
-  @{bin}/dirname    rix,
-  @{bin}/{,e}grep       		rix,
-  @{bin}/ls         rix,
-  @{bin}/paperconf  			rix,
+  owner @{lib}/python3.13/site-packages/gnucash/__pycache__/ rw,
 
+  @{sh_path}                            rix,
+  @{bin}/finance-quote-wrapper  r,
+  @{bin}/paperconf                      rix,
+  @{bin}/perl     rix,
+
+  /usr/share/gnucash/{,**} rw,
+  /usr/share/gtk-3.0/settings.ini r,
+  /usr/share/guile/site/3.0/gnucash/{,**} r,
+  /usr/share/glib-2.0/schemas/gschemas.compiled r,  # Needed!
   /usr/share/icons/{,**} r,
   /usr/share/mime/{,**} r,
+  /usr/share/perl5/{,**} r,
+  /usr/share/pixmaps/{,**} r,
+  /usr/share/terminfo/d/dumb r,
+  /usr/share/themes/Default/gtk-3.0/gtk-keys.css r,
   /usr/share/thumbnailers/{,**} r,
-  /usr/share/libfm-qt6/translations/libfm-qt_de.qm r,
-  /usr/share/featherpad/translations/featherpad_de.qm r,
-  /usr/share/gnumeric/{,**} r,
 
-  /etc/ r,
-  /etc/fstab r,
   /etc/cups/client.conf r, 
-  /etc/arch-release r,
+  /etc/gnucash/environment r,
+  /etc/inputrc r,
 
   owner @{HOME}/.xscreensaver r,
   owner @{HOME}/.icons/default/index.theme r,
@@ -58,13 +64,11 @@ profile gnumeric @{exec_path} {
   owner @{user_config_dirs}/#@{int} rw,
 
   owner @{user_share_dirs}/gvfs-metadata/home r,
+  owner @{user_share_dirs}/gnucash/{,**} rw,
   owner @{user_share_dirs}/sddm/xorg-session.log w,
   owner @{user_share_dirs}/sddm/wayland-session.log w,
 
   owner @{user_cache_dirs}/thumbnails/ rw,
-
-  /tmp/ r,
-  owner /tmp/#@{int}		rw,
 
   @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
   @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
@@ -74,16 +78,20 @@ profile gnumeric @{exec_path} {
   owner @{PROC}/@{pid}/mountinfo r,
   owner @{PROC}/@{pid}/mounts r,
 
-  /dev/tty						rw,
+  /dev/tty                                              rw,
+
   owner /dev/tty@{u8} rw,
 
+  owner /tmp/#@{int}            rw,
   owner /tmp/gtkprint_ppd_@{rand6} rw,
+  owner /tmp/gnucash.trace rw,
+  owner /tmp/gnucash.trace.@{rand6}.log rw,
 
   deny owner @{user_share_dirs}/gvfs-metadata/*.log rw,
   deny owner @{HOME}/.* rw,
   deny /etc/passwd  r,
-  
-  include if exists <local/abiword>
-}
 
+  include if exists <local/gnucash>
+}
+ 
 # vim:syntax=apparmor
