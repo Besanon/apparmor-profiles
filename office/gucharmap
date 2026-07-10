@@ -1,32 +1,42 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
-# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_path} = @{bin}/gucharmap
-profile gucharmap @{exec_path} flags=(attach_disconnected, complain) {
-  include <abstractions/base>
+@{exec_pathGUC} = @{bin}/gucharmap
+@{att} = /
+profile gucharmap @{exec_pathGUC} flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+  include <abstractions/attached/base>
   include <abstractions/app/bwrap-glycin>
-  include <abstractions/consoles>
+  include <abstractions/attached/consoles>
   include <abstractions/dconf>
   include <abstractions/fonts-strict>
   include <abstractions/graphics>
+  include <abstractions/gtk-strict>
   include <abstractions/fontconfig-cache-read>
-  include <abstractions/nameservice-strict>
+  include <abstractions/mime>
+  include <abstractions/attached/nameservice-strict>
+  include <abstractions/X-strict>
 
   signal (read) set=(kill,term) peer=lxqt-session,
 
-  @{exec_path} mr,
+  @{exec_pathGUC} mr,
 
   @{bin}/bwrap                          Px -> gucharmap//&glycin,
   @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> gucharmap//&glycin//&glycin//loaders,
 
   /usr/share/icons/{,**} r,
   /usr/share/glib-2.0/schemas/gschemas.compiled r,
+  /usr/share/themes/Default/gtk-3.0/gtk-keys.css r,
+  /usr/share/pixmaps/{,**} r,
+
+  / r,
+
+  owner @{user_share_dirs}/sddm/wayland-session.log w,
 
   @{PROC}/@{pid}/cgroup r,
   owner @{PROC}/@{pid}/maps r,
@@ -41,4 +51,3 @@ profile gucharmap @{exec_path} flags=(attach_disconnected, complain) {
 
 # vim:syntax=apparmor
   
-
