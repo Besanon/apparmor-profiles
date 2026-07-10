@@ -1,19 +1,19 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
-# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_pathgal} = @{bin}/galculator
-#profile galculator @{exec_pathgal} flags=(complain) {
-profile galculator @{exec_pathgal} flags=(attach_disconnected) {
-  include <abstractions/base>
+@{exec_path} = @{bin}/galculator
+@{att} = /att/galculator/
+profile galculator /{,usr/}bin/galculator flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+  include <abstractions/attached/base>
   include <abstractions/bus-session>
   include <abstractions/app/bwrap-glycin>
-  include <abstractions/consoles>
+  include <abstractions/attached/consoles>
   include <abstractions/dconf>
   include <abstractions/freedesktop.org>
   include <abstractions/fonts-strict>
@@ -21,11 +21,11 @@ profile galculator @{exec_pathgal} flags=(attach_disconnected) {
   include <abstractions/graphics>
   include <abstractions/qt6>
   include <abstractions/X-strict>
-  include <abstractions/nameservice-strict>
+  include <abstractions/attached/nameservice-strict>
   
   signal (read) set=(kill,term) peer=lxqt-session,
 
-  @{exec_pathgal}				mr,  
+  @{exec_path}				mr,  
 
   @{bin}/bwrap                          Px -> galculator//&glycin,
   @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> galculator//&glycin//&glycin//loaders,
@@ -33,7 +33,9 @@ profile galculator @{exec_pathgal} flags=(attach_disconnected) {
   /etc/pulse/client.conf r,
   
   /usr/share/galculator/{,**}			r,
-  /usr/share/themes/{,**} r,
+  /usr/share/themes/Default/gtk-3.0/gtk-keys.css r,
+
+  / r,
 
   owner @{HOME}/.Xdefaults r,
   
@@ -44,7 +46,7 @@ profile galculator @{exec_pathgal} flags=(attach_disconnected) {
   owner @{user_config_dirs}/pulse/cookie rwk,
 
   owner @{user_share_dirs}/sddm/xorg-session.log w,
-  owner @{user_share_dirs}/sddm/wayland-session.log w,
+#  owner @{user_share_dirs}/sddm/wayland-session.log w,
 
   owner @{user_cache_dirs}/event-sound-cache.tdb.@{hex32}.@{arch}-pc-linux-gnu rwk,
 
@@ -54,7 +56,6 @@ profile galculator @{exec_pathgal} flags=(attach_disconnected) {
   @{sys}/devices/@{pci_bus}/0000:00:08.1/0000:05:00.0/vendor r,
   @{sys}/devices/@{pci_bus}/0000:00:08.1/0000:05:00.0/device r,
   @{sys}/devices/@{pci_bus}/0000:00:08.1/0000:05:00.0/uevent r,
-  @{sys}/fs/cgroup/@{int}/cpu.max r,
   @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
   @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
   @{sys}/fs/cgroup/user.slice/cpu.max r,
@@ -66,6 +67,9 @@ profile galculator @{exec_pathgal} flags=(attach_disconnected) {
 
   /dev/shm/ r,
   /dev/udmabuf 					rw,
+
+  deny owner @{PROC}/@{pid}/mountinfo r,
+  deny owner @{user_share_dirs}/gvfs-metadata/uuid-@{uuid} r,
 
   include if exists <local/galculator>
 }
