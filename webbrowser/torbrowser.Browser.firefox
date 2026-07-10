@@ -16,7 +16,6 @@ include <tunables/global>
 
 profile torbrowser_firefox @{torbrowser_firefox_executable} {
   include <abstractions/audio-client>
-#  include <abstractions/app/bwrap-glycin>
   include <abstractions/dri-enumerate>
   include <abstractions/gnome>
   include <abstractions/ibus>
@@ -30,10 +29,6 @@ profile torbrowser_firefox @{torbrowser_firefox_executable} {
   ptrace (trace) peer=@{profile_name},
   signal (receive, send) set=("term") peer=@{profile_name},
   signal (receive) set=term peer=lxqt-session,
-
-#  @{bin}/bwrap                          Px -> torbrowser_firefox//&glycin,
-#  @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> torbrowser_firefox//&glycin//&glycin//loaders,
-
   
   /var/cache/fontconfig/ rw,
 
