@@ -1,15 +1,16 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2020-2021 Mikhail Morfikov
-# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
-abi <abi/3.0>,
+abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_pathLY} = @{bin}/lynis
-profile lynis @{exec_pathLY} {
-  include <abstractions/base>
+@{exec_path} = @{bin}/lynis
+@{att} = ""
+profile lynis /{,usr/}bin/lynis {
+  include <abstractions/base-strict>
   include <abstractions/gtk>
   include <abstractions/fonts>
   include <abstractions/fontconfig-cache-read>
@@ -18,32 +19,67 @@ profile lynis @{exec_pathLY} {
   include <abstractions/thumbnails-cache-read>
   include <abstractions/disks-read>
   include <abstractions/consoles>
-
   include <abstractions/app-launcher-user>
 
-  # For root window
-  deny capability dac_read_search,
-  deny capability dac_override,
+  capability dac_read_search,
+  capability mknod,
+  capability net_admin,
+  capability sys_admin,
 
-  # Needed?
-  deny capability sys_nice,
+  network netlink raw,
 
   ptrace (read) peer=@{p_systemd},
 
-  @{exec_pathLY} mr,
+  @{exec_path} mr,
 
-  owner @{PROC}/@{pid}/mountinfo r,
-  owner @{PROC}/@{pid}/mounts r,
-  owner @{PROC}/@{pid}/fd/ r,
-  owner @{PROC}/@{pid}/cgroup r,
+  @{sh_path} r,
 
-  @{sys}/bus/ r,
-  @{sys}/class/ r,
-
-  @{sys}/devices/system/node/ r,
-  @{sys}/devices/system/node/node@{int}/meminfo r,
-
-  @{sys}/fs/cgroup/{,**} r,
+  @{bin}/echo rix,
+  @{bin}/realpath rix,
+  @{bin}/mkdir rix,
+  @{bin}/getopt rix,
+  @{bin}/faked rix,
+  @{bin}/ln rix,  
+  @{bin}/ls rix,
+  @{bin}/cat rix,
+  @{bin}/cut rix,
+  @{bin}/gawk rix,
+  @{bin}/gre rix,
+  @{bin}/integritysetup rix,
+  @{bin}/veritysetup rix,
+  @{bin}/tr rix,
+  @{bin}/sed rix,
+  @{bin}/locale   rix,
+  @{bin}/grep rix,
+  @{bin}/chmod rix,
+  @{bin}/date rix,
+  @{bin}/fakeroot rix,
+  @{bin}/getent rix,
+  @{bin}/gettext rix,
+  @{bin}/checkupdates rix,
+  @{bin}/tput rix,
+  @{bin}/xtables-nft-multi rix,
+  @{bin}/head rix,
+  @{bin}/wc rix,
+  @{bin}/mktemp rix,
+  @{bin}/find rix,
+  @{bin}/sort rix,
+  @{bin}/stat rix,
+  @{bin}/readlink rix,
+  @{bin}/rm rix,
+  @{sh_path}a1sum rix,
+  @{bin}/cryptsetup rix,
+  @{bin}/openssl rix,
+  @{bin}/xargs rix,
+  @{bin}/perl rix,
+  @{bin}/python3.@{int} rix,
+  @{bin}/wget rix,
+  @{bin}/od rix,
+  @{bin}/systemctl rCx -> systemctl,
+  @{bin}/tail rix,
+  @{bin}/file rix,
+  @{bin}/uniq rix,
+  @{bin}/kadmin.local rix,
 
   # To read/write files in the system. The read permission is granted for all files, the write
   # permission only for the owner. Also, dirs like /dev/, /efi/, /proc/, /sys/ are not included in
@@ -85,7 +121,59 @@ profile lynis @{exec_pathLY} {
         /var/     r,
         /var/**   r,
   owner /var/**   rw,
-  owner @{sys}/firmware/efi/efivars/ r,
+
+ 	owner @{PROC}/@{pid}/mountinfo r,
+  	owner @{PROC}/@{pid}/mounts r,
+  	owner @{PROC}/@{pid}/fd/ r,
+  	owner @{PROC}/@{pid}/cgroup r,
+  @{sys}/bus/usb/devices/ r,
+  @{PROC}/devices r,
+  @{PROC}/@{pid}/net/ip_tables_names r,
+  @{PROC}/sys/fs/binfmt_misc/ r,
+  @{PROC}/sys/kernel/random/entropy_avail r,
+  @{PROC}/sys/vm/swappiness r,
+  @{PROC}/@{int}/cmdline r, 
+  @{PROC}/@{int}/environ r,
+  @{PROC}/config.gz r,
+  @{PROC}/uptime r,
+
+  	owner @{sys}/firmware/efi/efivars/ r,
+  @{sys}/bus/ r,
+  @{sys}/class/ r,
+  @{sys}/class/net/ r,
+  @{sys}/devices/@{pci}/net/**/operstate r,
+  @{sys}/devices/system/node/ r,
+  @{sys}/devices/system/node/node@{int}/meminfo r,
+  @{sys}/fs/cgroup/{,**} r,
+  @{sys}/kernel/security/apparmor/profiles r,
+  @{sys}/devices/@{pci}/net/wlan0/address r,
+  @{sys}/devices/virtual/misc/hw_random/rng_current r,
+  @{sys}/firmware@{efi}/efivars/SecureBoot-@{uuid} r,
+
+  @{run}/lynis.pid rw,
+  @{run}/cryptsetup/L_@{int}:@{int} rwk, 
+
+  @{tmp}/lynis.@{rand10} rw,
+
+  /dev/**/ r,
+  /dev/mapper/control rw,
+
+  deny capability dac_override,
+  deny capability sys_nice,
+ 
+  profile systemctl flags=(attach_disconnected) {
+    include <abstractions/attached/base>
+    include <abstractions/app/systemctl>
+
+    capability mknod,
+    capability sys_resource,
+
+    / r,
+
+    owner @{user_share_dirs}/sddm/xorg-session.log w,
+
+    include if exists <local/lynis_systemctl>
+  }
 
 }
 
