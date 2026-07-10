@@ -2,32 +2,33 @@
 # Copyright 2019 (C) Madaidan
 # Copyright (C) 2021-2024 Alexandre Pujol <alexandre@pujol.io>
 # Copyright 2019-2023 (C) Krathalan,Mortezadadgar
-# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # GPLv3 license
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_pathLF} = /usr/lib/librewolf/librewolf  @{lib}/librewolf/librewolf 
-profile librewolf @{exec_pathLF} flags=(attach_disconnected) {
- include <abstractions/base>
+@{exec_path} = /usr/lib/librewolf/librewolf  @{lib}/librewolf/librewolf 
+@{att} = /att/librewolf/
+profile librewolf /{usr/lib/librewolf/librewolf,{,usr/}lib{,exec,64}/librewolf/librewolf} flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+  include <abstractions/attached/base>
   include <abstractions/audio-client>
+  include <abstractions/app/bwrap-glycin>
   include <abstractions/bus-session>
   include <abstractions/bus-system>
-  include <abstractions/bus/org.a11y>
-  include <abstractions/bus/org.freedesktop.FileManager1>
-  include <abstractions/bus/org.freedesktop.login1>
-  include <abstractions/bus/org.freedesktop.portal.Desktop>
-  include <abstractions/bus/org.freedesktop.RealtimeKit1>
-  include <abstractions/bus/org.gtk.Private.RemoteVolumeMonitor>
+  include <abstractions/bus/session/org.freedesktop.FileManager1>
+  include <abstractions/bus/system/org.freedesktop.login1>
+  include <abstractions/bus/session/org.freedesktop.portal.Desktop>
+  include <abstractions/bus/system/org.freedesktop.RealtimeKit1>
+  include <abstractions/bus/session/org.gtk.Private.RemoteVolumeMonitor>
   include <abstractions/dconf-write>
   include <abstractions/desktop>
   include <abstractions/enchant>
   include <abstractions/fontconfig-cache-read>
   include <abstractions/graphics-full>
   include <abstractions/gstreamer>
-  include <abstractions/nameservice-strict>
+  include <abstractions/attached/nameservice-strict>
   include <abstractions/ssl_certs>
   include <abstractions/thumbnails-cache-read>
   include <abstractions/user-download-strict>
@@ -44,73 +45,94 @@ profile librewolf @{exec_pathLF} flags=(attach_disconnected) {
 
   deny dbus send bus=system path=/org/freedesktop/hostname1,
  
-  @{exec_pathLF}	mrix,
+  @{exec_path}	mrix,
 
-  /usr/lib/gio-launch-desktop Ux,
+  @{bin}/bwrap                          Px -> librewolf//&glycin,
+  @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> librewolf//&glycin//&glycin//loaders,
+
+  / r,
+
+  /usr/lib/gio-launch-desktop rPx, 
 
   /etc/libva.conf r,
   /etc/mime.types r,
   
   /usr/lib/librewolf*/glxtest rCx,
   /usr/lib/librewolf*/vaapitest rCx,
-  @{lib}/@{multiarch}/qt6/plugins/kf6/org.kde.kwindowsystem.platforms/KF6WindowSystemKWaylandPlugin.so mr,
+  @{lib}/@{multiarch}/qt6/plugins/kf6/org.kde.kwindowsystem.platforms/KF6WindowSystemKWaylandPlugin.so mr, # NEW
+  @{lib}/@{multiarch}/qt6/plugins/kf6/org.kde.kwindowsystem.platforms/KF6WindowSystemX11Plugin.so mr,  # NEW
 
+  owner @{HOME}/.librewolf/anyrjawt.default-default/extensions/*.xpi r,
   owner @{user_config_dirs}/lxqt-mimeapps.list r,
   owner "@{user_config_dirs}/chromium/Local State" r,
+  owner @{user_share_dirs}/sddm/xorg-session.log w,
+  owner @{user_share_dirs}/sddm/wayland-session.log w,
+
+  owner @{att}/dev/tty@{u16} rw,
 
   @{sys}/devices/@{pci}/ r,
-  @{sys}/fs/cgroup/@{int}/cpu.max r,
 
-  profile librewolf-glxtest /usr/lib/librewolf*/glxtest {
-    include <abstractions/base>
+  /dev/video@{u16} r,
+  owner /dev/tty@{u16} rw,
+
+  profile librewolf-glxtest /usr/lib/librewolf*/glxtest flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+    include <abstractions/attached/base>
     include <abstractions/graphics>
-    include <abstractions/nameservice-strict>
+    include <abstractions/attached/nameservice-strict>
     include <abstractions/X-strict>
-    include <abstractions/wayland>
+    include <abstractions/wayland-strict>
    
-    /tmp/librewolf*/.parentlock w,
+    @{tmp}/librewolf*/.parentlock w,
     @{HOME}/.librewolf/*/.parentlock w,
     owner @{HOME}/.{ICE,X}authority r,
+
+    owner @{user_share_dirs}/sddm/wayland-session.log w,
+    owner @{user_share_dirs}/sddm/xorg-session.log w,
     
     @{sys}/bus/pci/devices/ r,
     @{sys}/devices/pci[0-9]*/**/drm/ r,
     @{sys}/devices/pci[0-9]*/**/{class,device,vendor} r,
 
-    owner /tmp/xauth_@{rand6} r,
+    owner @{tmp}/xauth_@{rand6} r,
+    owner @{att}/dev/tty@{u16} rw,
 
-    owner /dev/tty@{int} rw,
+    /dev/video@{int} r,
+
+    owner /dev/tty@{u8} rw,
    
     deny /etc/{nsswitch.conf,passwd} r,
 
     include if exists <local/librewolf_glxtest>
   }
   
-  profile librewolf-vaapitest /usr/lib/librewolf*/vaapitest flags=(attach_disconnected) {
-    include <abstractions/base>
+  profile librewolf-vaapitest /usr/lib/librewolf*/vaapitest flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+    include <abstractions/attached/base>
     include <abstractions/dri>
     include <abstractions/graphics>
-    include <abstractions/nameservice-strict>
+    include <abstractions/attached/nameservice-strict>
+
+    network netlink raw,
 
     /etc/libva.conf r,
     
     @{sys}/devices/pci[0-9]*/[0-9]*/{irq,resource} r,
     
-    /tmp/librewolf*/.parentlock w,
+    @{tmp}/librewolf*/.parentlock w,
 
     @{HOME}/.cache/librewolf/librewolf/*/startupCache/*.{bin,little} r,
     @{HOME}/.librewolf/librewolf/*/.parentlock w,
-    owner @{HOME}/.librewolf/@{rand8}.default-default/.parentlock rw,
-    owner @{HOME}/.librewolf/**/extensions/skipredirect@sblask.xpi r,
-    owner @{HOME}/.librewolf/**/extensions/uBlock0@raymondhill.net.xpi r,
-    owner @{HOME}/.librewolf/**/extensions/*.xpi r, 
-
     @{HOME}/.librewolf/librewolf/*/gmp-gmpopenh264/{,**} r,
+    owner @{HOME}/.librewolf/@{rand8}.default-default/.parentlock rw,
+    owner @{HOME}/.librewolf/**.default-default/extensions/*.xpi r,
 
     owner @{user_cache_dirs}/librewolf/@{rand8}.default-default/{,**}  rw,
-    owner @{user_share_dirs}/sddm/wayland-session.log a,
 
-    owner /dev/tty@{int} rw,
-    /dev/tty@{int} rw,
+    owner @{user_share_dirs}/sddm/wayland-session.log w,
+    owner @{user_share_dirs}/sddm/xorg-session.log w,
+
+    owner @{att}/dev/tty@{u8} rw,
+
+    owner /dev/tty@{u8} rw,
 
     deny /etc/igfx* w,
     deny network netlink raw,
@@ -126,9 +148,10 @@ profile librewolf @{exec_pathLF} flags=(attach_disconnected) {
   #security key
   @{sys}/bus/ r,
   @{sys}/class/{,hidraw/} r,
-  /dev/hidraw[0-9] rw,
-  /dev/tty1 rw,
+  /dev/hidraw@{u8} rw,
+  /dev/tty@{u8} rw,
 
+  @{PROC}/pressure/memory r,
   
   # System device access
   @{sys}/devices/pci[0-9]*/[0-9]*/ r,
@@ -137,7 +160,7 @@ profile librewolf @{exec_pathLF} flags=(attach_disconnected) {
   @{sys}/devices/pci[0-9]*/**/{irq,resource,revision,config,uevent} r,
   @{sys}/devices/system/cpu/present r,
   @{sys}/devices/system/cpu/cpufreq/policy[0-9]*/cpuinfo_max_freq r,
-  @{sys}/devices/system/cpu/cpu[0-9]*/cache/index[0-9]*/size r,
+  @{sys}/devices/system/cpu/cpu@{int}*/cache/index[0-9]*/size r,
 
   #lsb release
   deny /usr/bin/lsb_release rx,
@@ -163,8 +186,8 @@ profile librewolf @{exec_pathLF} flags=(attach_disconnected) {
   ptrace trace peer=librewolf,
   /usr/bin/{bash,dash} rix,
   /usr/bin/keepassxc-proxy Px,
-  # Use px instead of Px to avoid env scrubbing for LD_PRELOAD libEGL.so, libmozsandbox.so
-  /{usr/bin,usr/lib/librewolf*}/librewolf* mrpx,
+  # Use px instead of px to avoid env scrubbing for LD_PRELOAD libEGL.so, libmozsandbox.so
+  /{usr/bin,usr/lib/librewolf*}/librewolf* mrPx,
   owner /dev/shm/shmfd-* rw,
   owner /dev/shm/org.librewolf.{,ipc.}* rw,
 
@@ -191,7 +214,7 @@ profile librewolf @{exec_pathLF} flags=(attach_disconnected) {
   /{,var/}run/systemd/userdb/ r,
 
   # Needed to install addons, export files from addons
-  /tmp/{,**} rwkl,
+  @{tmp}/{,**} rwkl,
   
   # /proc sandboxing is better handled by bubblewrap
   @{PROC}/@{pid}/{fd,task}/ r,
@@ -246,11 +269,15 @@ profile librewolf @{exec_pathLF} flags=(attach_disconnected) {
   deny @{sys}/devices/system/cpu/*/cache/index@{int}/size r,
   deny @{sys}/devices/system/cpu/cpufreq/policy@{int}/cpuinfo_max_freq r,
   deny @{sys}/devices/virtual/block/*/uevent r,
+  deny @{sys}/devices/virtual/dmi/id/product_name r,
+  deny @{sys}/devices/virtual/dmi/id/product_sku r,
   deny @{PROC}/@{pid}/net/if_inet6 r,
   deny @{PROC}/@{pid}/net/route r,
   deny owner @{user_cache_dirs}/event-sound-cache.tdb.host.@{multiarch} rw,
   deny @{sys}/fs/cgroup/user.slice/user-@{int}.slice/session-@{int}.scope/cpu.max r,
-# Ende 
+  deny @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
+  deny @{sys}/fs/cgroup/user.slice/cpu.max r,
+# End
 
   include if exists <local/librewolf>
 }
