@@ -1,6 +1,6 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2022-2024 Alexandre Pujol <alexandre@pujol.io>
-# Copyright (C) 2024 Besanon <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
@@ -8,8 +8,9 @@ abi <abi/4.0>,
 include <tunables/global>
 
 @{exec_path} = @{bin}/djview
-profile djview @{exec_path} {
-  include <abstractions/base>
+@{att} = ""
+profile djview /{,usr/}bin/djview {
+  include <abstractions/base-strict>
   include <abstractions/bus-accessibility>
   include <abstractions/bus-session>
   include <abstractions/bus/session/org.freedesktop.portal.Desktop>
@@ -29,7 +30,31 @@ profile djview @{exec_path} {
 
   signal (read) set=(kill,term) peer=lxqt-session,
 
-  #aa:dbus own bus=session name=org.gnome.evince.Daemon
+  include <abstractions/bus/session/own>
+
+  dbus bind bus=session name=org.gnome.evince.Daemon{,.*},
+  dbus receive bus=session path=/org/gnome/evince/Daemon{,/**}
+       interface=org.gnome.evince.Daemon{,.*}
+       peer=(name="@{busname}"),
+  dbus send bus=session path=/org/gnome/evince/Daemon{,/**}
+       interface=org.gnome.evince.Daemon{,.*}
+       peer=(name="{@{busname},org.freedesktop.DBus}"),
+  dbus (send receive) bus=session path=/org/gnome/evince/Daemon{,/**}
+       interface=org.freedesktop.DBus.Properties
+       member={Get,GetAll,Set,PropertiesChanged}
+       peer=(name="{@{busname},org.freedesktop.DBus}"),
+  dbus receive bus=session path=/org/gnome/evince/Daemon{,/**}
+       interface=org.freedesktop.DBus.Introspectable
+       member=Introspect
+       peer=(name="@{busname}"),
+  dbus receive bus=session path=/org/gnome/evince/Daemon{,/**}
+       interface=org.freedesktop.DBus.ObjectManager
+       member=GetManagedObjects
+       peer=(name="{@{busname},org.gnome.evince.Daemon{,.*}}"),
+  dbus send bus=session path=/org/gnome/evince/Daemon{,/**}
+       interface=org.freedesktop.DBus.ObjectManager
+       member={InterfacesAdded,InterfacesRemoved}
+       peer=(name="{@{busname},org.freedesktop.DBus}"),
 
   dbus send bus=session path=/org/gtk/vfs/metadata
        interface=org.gtk.vfs.Metadata
@@ -48,6 +73,7 @@ profile djview @{exec_path} {
   /usr/share/thumbnailers/{,*} 			r,
   /usr/share/icu/73.2/icudt73l.dat 		r,
   /usr/share/hwdata/pnp.ids 			r,
+  /usr/share/libfm-qt6/translations/libfm-qt_de.qm r,
   /usr/share/qt6/translations/qt_de.qm 		r,
   /usr/share/qt/translations/{,**}		r,
   /usr/share/lxqt/*.conf			r,
@@ -68,6 +94,7 @@ profile djview @{exec_path} {
   owner @{user_config_dirs}/DjVuLibre/{,**} 	rw,
   owner @{user_config_dirs}/DjVuLibre/*  rwkl -> @{user_config_dirs}/DjVuLibre/#@{int},
   owner @{user_share_dirs}/sddm/xorg-session.log w,
+  owner @{user_share_dirs}/sddm/wayland-session.log w,
 
   owner /tmp/*.pdf 			r,
   owner /tmp/gtkprint* 			rw,
@@ -77,10 +104,8 @@ profile djview @{exec_path} {
 
   /dev/tty 				rw,
 
-#  @{sys}/devices/@{pci_bus}/**/**/{vendor,device}               r,
-
   deny @{lib}/ r, # asks when viewing PostScript files
-
+  deny @{HOME}/.bash* r,
 }
 
 # vim:syntax=apparmor
