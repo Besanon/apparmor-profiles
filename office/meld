@@ -1,6 +1,6 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
-# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
@@ -8,21 +8,22 @@ abi <abi/4.0>,
 include <tunables/global>
 
 @{exec_pathmeld} = @{bin}/meld
-profile meld @{exec_pathmeld} {
-  include <abstractions/base>
+@{att} = /
+profile meld @{exec_pathmeld} flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+  include <abstractions/attached/base>
+  include <abstractions/audio-client>
   include <abstractions/app/bwrap-glycin>
-  include <abstractions/consoles>
+  include <abstractions/attached/consoles>
+  include <abstractions/dbus-session>
   include <abstractions/freedesktop.org>
   include <abstractions/fonts>
-  include <abstractions/gtk-strict>
-  include <abstractions/qt6>
+  include <abstractions/gtk>
+  include <abstractions/python>
+  include <abstractions/qt5>
   include <abstractions/X-strict>
-  include <abstractions/nameservice-strict>
+  include <abstractions/attached/nameservice-strict>
   include <abstractions/dconf>
   include <abstractions/cups-client>
-  include <abstractions/bus-session>
-  include <abstractions/bus-accessibility>
-  include <abstractions/thumbnails-cache-read>
   include <abstractions/user-read-strict>
   include <abstractions/user-write-strict>
 
@@ -47,16 +48,18 @@ profile meld @{exec_pathmeld} {
   @{bin}/bwrap                          Px -> meld//&glycin,
   @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> meld//&glycin//&glycin//loaders,
 
+  @{open_path} rPx -> child-open-help,
+
   /bin/env						r,
   /usr/lib						ix,
   @{bin}/which						rPx,
-  @{bin}/python3.@{int}					rPx, 
+
+  / r,
  
   /usr/share/gvfs/remote-volume-monitors/		r,
   /usr/bin/						r,
   /usr/share/meld/{,**}					r,
   /usr/share/gtksourceview-[2-9]*/{,**}			r,	
-  /usr/share/themes/Default/gtk-3.0/*			r,
   /usr/lib/cairo/{,**/}					w,	
   /usr/lib/cairo/**.pyc{,.*}				w,
 
@@ -67,34 +70,31 @@ profile meld @{exec_pathmeld} {
   owner @{user_config_dirs}/ibus/bus/{,**} r,
   owner @{user_config_dirs}/meld/{,**}			rw,
 
-  owner @{user_share_dirs}/meld/{,**}			rw,
   owner @{user_share_dirs}/ r,
-  owner @{user_share_dirs}/sddm/xorg-session.log 	w,
+  owner @{user_share_dirs}/meld/{,**}			rw,
   owner @{user_share_dirs}/sddm/wayland-session.log 	w,
-
+  owner @{user_share_dirs}/sddm/xorg-session.log 	w,
+  
   owner @{run}/user/@{uid}/dconf/user rw,
 
   /tmp/							r,
   owner /tmp/@{int}					rw,	
-  owner /tmp/@{rand8}					rw, 
+  owner /tmp/@{rand8}					rw,
 
   owner @{PROC}/@{pid}/fd/				r,
+  owner @{PROC}/@{pid}/cgroup 				r,
   owner @{PROC}/@{pid}/mounts				r,
   owner @{PROC}/@{pid}/mountinfo			r,
-  owner @{PROC}/@{pid}/stat				r,
-  owner @{PROC}/@{pid}/cgroup 				r,
 
-  @{sys}/fs/cgroup/user.slice/cpu.max 			r,
-  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
   @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/cpu.max r,
 
-  owner /dev/shm/{,**}  r,
+  owner /dev/shm/{,**}  rw,
   owner /dev/shm/** rwkl -> /dev/shm/sem.@{rand6}, 
 
   deny /usr/bin/git					x,
   deny /usr/share/gvfs/remote-volume-monitors/udisks2.monitor rwk,
-  deny @{lib}/python3.@{int}/{,**} w,
-  deny @{HOME}/.* r,
 
   include if exists <local/meld>
 }
