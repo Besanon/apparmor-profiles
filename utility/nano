@@ -1,25 +1,25 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
-# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-profile nano @{bin}/nano {
-  include <abstractions/base>
+@{exec_path} = @{bin}/nano
+@{att} = ""
+profile nano /{,usr/}bin/nano {
+  include <abstractions/base-strict>
   include <abstractions/nameservice-strict>
-  include <abstractions/common/app>
   include <abstractions/thumbnails-cache-read>
   
   capability dac_read_search,
   capability dac_override,
 
-  @{bin}/nano		mr,
+  @{exec_path}		mr,
   
   owner /tmp/@{int}  r,
-  /opt/{,**}  r,
 
   /usr/share/libfm-qt/translations/libfm-qt_de.qm r,
   /etc/fstab r,
@@ -49,8 +49,8 @@ profile nano @{bin}/nano {
         @{MOUNTS}/** r,
   owner @{MOUNTS}/** rw,
         /opt/     r,
-        /opt/**   r,
-  owner /opt/**   rw,
+        /opt/{,**}   rw,
+  owner /opt/{,**}   rw,
         /root/    r,
         /root/**  r,
   owner /root/**  rw,
@@ -72,7 +72,10 @@ profile nano @{bin}/nano {
   /var/cache/fontconfig/** rw,  
 
   /dev/tty						rw,
-   owner /dev/tty@{int} rw,
+   owner /dev/tty@{u8} rw,
+  /dev/pts/@{u8} rw,
+
+  include if exists <local/nano>
 }
 
 # vim:syntax=apparmor
