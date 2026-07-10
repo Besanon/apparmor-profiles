@@ -1,17 +1,18 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2015-2022 Mikhail Morfikov
 # Copyright (C) 2021-2024 Alexandre Pujol <alexandre@pujol.io>
-# Copyright (C) 2026 Besanon <m231009ts@mailfence.com>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_path} = @{bin}/gnumeric @{bin}/gnumeric-1.12.59
-profile gnumeric @{exec_path} {
-  include <abstractions/base>
-  include <abstractions/consoles>
+@{exec_path} = @{bin}/gnumeric @{bin}/gnumeric-?.??.??
+@{att} = /att/gnumeric/
+profile gnumeric /{{,usr/}bin/gnumeric,{,usr/}bin/gnumeric-?.??.??} flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+  include <abstractions/attached/base>
+  include <abstractions/audio-client>
+  include <abstractions/attached/consoles>
   include <abstractions/app/bwrap-glycin>
   include <abstractions/bus-session>
   include <abstractions/bus/session/org.freedesktop.FileManager1>
@@ -20,8 +21,9 @@ profile gnumeric @{exec_path} {
   include <abstractions/dconf-write>
   include <abstractions/fonts-strict>
   include <abstractions/fontconfig-cache-read>
+  include <abstractions/lxqt>
   include <abstractions/graphics>
-  include <abstractions/nameservice-strict>
+  include <abstractions/attached/nameservice-strict>
   include <abstractions/thumbnails-cache-read>
   include <abstractions/user-read-strict>
   include <abstractions/user-write-strict>
@@ -40,12 +42,15 @@ profile gnumeric @{exec_path} {
   @{bin}/ls         rix,
   @{bin}/paperconf  			rix,
 
+  / r,
+
   /usr/share/icons/{,**} r,
   /usr/share/mime/{,**} r,
   /usr/share/thumbnailers/{,**} r,
   /usr/share/libfm-qt6/translations/libfm-qt_de.qm r,
   /usr/share/featherpad/translations/featherpad_de.qm r,
   /usr/share/gnumeric/{,**} r,
+  /usr/share/sounds/freedesktop/index.theme r,
 
   /etc/ r,
   /etc/fstab r,
