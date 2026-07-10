@@ -1,24 +1,25 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2020-2022 Mikhail Morfikov
 # Copyright (C) 2021-2024 Alexandre Pujol <alexandre@pujol.io>
-# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_pathDRS} = @{bin}/rsync
-@{exec_pathDRS} += @{bin}/grsync
-profile grsync @{exec_pathDRS} {
-  include <abstractions/base>
+@{exec_path} = @{bin}/rsync
+@{exec_path} += @{bin}/grsync
+@{att} = /att/grsync/
+profile grsync /{{,usr/}bin/rsync,{,usr/}bin/grsync,{,usr/}bin/grsync} flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+  include <abstractions/attached/base>
   include <abstractions/app/bwrap-glycin>
-  include <abstractions/consoles>
+  include <abstractions/attached/consoles>
   include <abstractions/graphics>
   include <abstractions/gtk>
   include <abstractions/fonts>
   include <abstractions/fontconfig-cache-read>
-  include <abstractions/nameservice-strict>
+  include <abstractions/attached/nameservice-strict>
   include <abstractions/python>
   include <abstractions/user-read>
   include <abstractions/bus-session>
@@ -29,6 +30,7 @@ profile grsync @{exec_pathDRS} {
   include <abstractions/bus/session/org.gtk.vfs.Daemon>
   include <abstractions/dconf-write>
   include <abstractions/bus-accessibility>
+  include <abstractions/X-strict>
  
   capability dac_override,
   capability dac_read_search,
@@ -39,7 +41,7 @@ profile grsync @{exec_pathDRS} {
 
   signal receive set=term peer=lxqt-session,
 
-  @{exec_pathDRS} mr,
+  @{exec_path} mr,
 
   @{bin}/bwrap                          Px -> grsync//&glycin,
   @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> grsync//&glycin//&glycin//loaders,
@@ -77,7 +79,6 @@ profile grsync @{exec_pathDRS} {
   /usr/share/sounds/freedesktop/stereo/dialog-warning.oga   r,
   /usr/local/share/locale/de_DE/LC_MESSAGES/grsync.mo r,
   /usr/share/X11/xkb/keycodes/* r,
-  /usr/share/xkeyboard-config-2/{,**} r,
 
   /home/{,**}  r,
   owner @{HOME}/default.grsync rw,
@@ -127,7 +128,6 @@ profile grsync @{exec_pathDRS} {
   owner @{run}/user/@{uid}/pulse/ 	rw,
   owner @{run}/user/@{uid}/dconf/user 	rw,
 
-  @{sys}/fs/cgroup/@{int}/cpu.max r,
   @{sys}/devices/@{pci}/usb1/1-2/1-2:*/host3/target3:0:0/3:0:0:0/block/sdb/uevent r,
 
   /dev/fuse rw,
@@ -139,7 +139,7 @@ profile grsync @{exec_pathDRS} {
   @{sys}/fs/cgroup/user.slice/cpu.max r,
 
   profile ccache {
-    include <abstractions/base>
+    include <abstractions/attached/base>
 
     @{bin}/ccache mr,
 
@@ -155,9 +155,9 @@ profile grsync @{exec_pathDRS} {
   }
 
   profile fusermount {
-    include <abstractions/base>
-    include <abstractions/consoles>
-    include <abstractions/nameservice-strict>
+    include <abstractions/attached/base>
+    include <abstractions/attached/consoles>
+    include <abstractions/attached/nameservice-strict>
 
     capability sys_admin,
 
