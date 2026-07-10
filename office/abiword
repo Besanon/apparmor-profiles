@@ -1,35 +1,40 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2015-2022 Mikhail Morfikov
 # Copyright (C) 2021-2024 Alexandre Pujol <alexandre@pujol.io>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_pathabiw} = @{bin}/abiword
-profile abiword @{exec_pathabiw} {
-  include <abstractions/base>
-  include <abstractions/consoles>
+@{exec_path} = @{bin}/abiword
+@{att} = /att/abiword/
+profile abiword /{,usr/}bin/abiword flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+  include <abstractions/attached/base>
+  include <abstractions/attached/consoles>
+  include <abstractions/app/bwrap-glycin>
   include <abstractions/bus-session>
-  include <abstractions/bus-accessibility>
   include <abstractions/bus/session/org.freedesktop.FileManager1>
   include <abstractions/bus/session/org.gtk.vfs.Mountable>
   include <abstractions/cups-client>
   include <abstractions/dconf-write>
   include <abstractions/enchant>
-  include <abstractions/fonts>
+  include <abstractions/fonts-strict>
   include <abstractions/fontconfig-cache-read>
   include <abstractions/lxqt>
   include <abstractions/graphics>
-  include <abstractions/nameservice-strict>
+  include <abstractions/attached/nameservice-strict>
   include <abstractions/thumbnails-cache-read>
   include <abstractions/user-read-strict>
   include <abstractions/user-write-strict>
   
-  signal (receive) peer=lxqt-session,
+  signal (read) set=(kill,term) peer=lxqt-session,
 
-  @{exec_pathabiw}			mr,
+  @{exec_path}			mr,
+
+  @{bin}/bwrap                          Px -> abiword//&glycin,
+  @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> abiword//&glycin//&glycin//loaders,
 
   @{sh_path}        			rix,
   @{bin}/basename   rix,
@@ -44,17 +49,21 @@ profile abiword @{exec_pathabiw} {
   /usr/share/libfm-qt6/translations/libfm-qt_de.qm r,
   /usr/share/featherpad/translations/featherpad_de.qm r,
   /usr/share/abiword-3.0/{,**} r,
+  /usr/share/sounds/freedesktop/index.theme r,
 
   /etc/ r,
   /etc/fstab r,
   /etc/cups/client.conf r, 
   /etc/arch-release r,
 
+  / r,
+
   owner @{HOME}/.xscreensaver r,
   owner @{HOME}/.icons/default/index.theme r,
 
   owner @{user_config_dirs}/#@{int} rw,
   owner @{user_config_dirs}/abiword/{,**} rw,
+  owner @{user_config_dirs}/lxqt-mimeapps.list r,
 
   owner @{user_share_dirs}/ r,
   owner @{user_share_dirs}/gvfs-metadata/home r,
@@ -64,8 +73,17 @@ profile abiword @{exec_pathabiw} {
   owner @{user_cache_dirs}/thumbnails/ rw,
 
   /tmp/ r,
-  owner /tmp/#@{int}		rw,
+  owner @{tmp}/#@{int}		rw,
+  owner @{tmp}/@{rand6} rw,
+  owner @{tmp}/.gsf-save-@{rand6} rw,
+  owner @{tmp}/gtkprint_@{rand6} rw,
+  owner @{tmp}/gtkprint_ppd_@{rand6} rw,
 
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/cpu.max r,
+
+  owner @{PROC}/@{pid}/cgroup r,
   owner @{PROC}/@{pid}/mountinfo r,
   owner @{PROC}/@{pid}/mounts r,
 
