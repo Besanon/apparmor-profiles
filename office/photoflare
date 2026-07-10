@@ -1,34 +1,41 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
-# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-profile @{bin}/photoflare {
-  include <abstractions/base>
+@{exec_pathPH} = @{bin}/photoflare
+@{att} = /
+profile photoflare @{exec_pathPH} {
+  include <abstractions/base-strict>
   include <abstractions/dbus-accessibility>
-  include <abstractions/fonts>
+  include <abstractions/fonts-strict>
   include <abstractions/graphics>
   include <abstractions/consoles>
-  include <abstractions/qt5>
-  include <abstractions/nameservice>
+  include <abstractions/mime>
+  include <abstractions/qt6>
+  include <abstractions/nameservice-strict>
   include <abstractions/user-read-strict>
   include <abstractions/user-write-strict>
   include <abstractions/X-strict>
 
-  @{bin}/photoflare     			mr,
+  signal receive set=term peer=lxqt-session,
+
+  @{exec_pathPH}      			mr,
 
   /usr/share/hwdata/pnp.ids 			r,
-  /usr/share/GraphicsMagick-1.3.43/config/log.mgk     r,
-  /usr/share/GraphicsMagick-1.3.43/config/modules.mgk r,
+  /usr/share/libfm-qt6/translations/libfm-qt_de.qm r,
+  /usr/share/lxqt/*.conf r,
+  /usr/share/GraphicsMagick-1.@{int}.@{int}/config/log.mgk     r,
+  /usr/share/GraphicsMagick-1.@{int}.@{int}/config/modules.mgk r,
   /usr/share/photoflare/languages/de.qm		r,
   /usr/share/icons/{,**}			r,
+  /usr/share/thumbnailers/ r,
 
-  /etc/machine-id 				r,
-
+  owner @{user_config_dirs}/lxqt/*.conf r,
   owner @{user_config_dirs}/photoflare.io/{,**}         rwk,
   owner @{user_config_dirs}/photoflare.io/photoflare.conf.@{rand6} l -> @{user_config_dirs}/photoflare.io/#@{int},
   owner @{user_config_dirs}/#*				rwk,
@@ -36,8 +43,10 @@ profile @{bin}/photoflare {
   owner @{user_config_dirs}/QtProject.conf.@{rand6}	rwk,
   owner @{user_config_dirs}/QtProject.conf.@{rand6} l -> @{user_config_dirs}/#*,
   owner @{user_config_dirs}/QtProject.conf.lock 	rwk,
+  owner @{user_config_dirs}/user-dirs.dirs r,
 
-  owner @{user_share_dirs}/sddm/wayland-session.log a,
+  owner @{user_share_dirs}/sddm/wayland-session.log w,
+   owner @{user_share_dirs}/sddm/xorg-session.log w,
 
   @{sys}/devices/@{pci}/vendor 				r,
   @{sys}/devices/@{pci}/vice 				r,
@@ -48,9 +57,14 @@ profile @{bin}/photoflare {
   @{sys}/devices/@{pci}/uevent 				r,
   @{sys}/devices/@{pci}/revision 			r,
 
-  owner /tmp/qtsingleapp-Photo*				rwk,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/mounts r,
 
-  include if exists <local/photoflare 
+  owner @{tmp}/qtsingleapp-Photo*				rwk,
+
+  deny /etc/machine-id r,
+
+  include if exists <local/photoflare> 
 }
 
 # vim:syntax=apparmor
