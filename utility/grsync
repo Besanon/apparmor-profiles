@@ -11,13 +11,13 @@ include <tunables/global>
 @{exec_path} = @{bin}/rsync
 @{exec_path} += @{bin}/grsync
 @{att} = /att/grsync/
-profile grsync /{{,usr/}bin/rsync,{,usr/}bin/grsync,{,usr/}bin/grsync} flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+profile grsync /{{,usr/}bin/rsync,{,usr/}bin/grsync} flags=(attach_disconnected, attach_disconnected.path=@{att}) {
   include <abstractions/attached/base>
   include <abstractions/app/bwrap-glycin>
   include <abstractions/attached/consoles>
+  include <abstractions/gtk-strict>
   include <abstractions/graphics>
-  include <abstractions/gtk>
-  include <abstractions/fonts>
+  include <abstractions/fonts-strict>
   include <abstractions/fontconfig-cache-read>
   include <abstractions/attached/nameservice-strict>
   include <abstractions/python>
@@ -29,7 +29,7 @@ profile grsync /{{,usr/}bin/rsync,{,usr/}bin/grsync,{,usr/}bin/grsync} flags=(at
   include <abstractions/bus/session/org.gtk.Private.RemoteVolumeMonitor>
   include <abstractions/bus/session/org.gtk.vfs.Daemon>
   include <abstractions/dconf-write>
-  include <abstractions/bus-accessibility>
+  include <abstractions/wayland-strict>
   include <abstractions/X-strict>
  
   capability dac_override,
@@ -72,12 +72,12 @@ profile grsync /{{,usr/}bin/rsync,{,usr/}bin/grsync,{,usr/}bin/grsync} flags=(at
   /usr/share/applications/*	 r,
   /usr/share/icons/{,**}	 r,
   /usr/share/mime/{,**}		 r,
-  /usr/share/fonts/{,**}	 r,
   /usr/share/pixmaps/		 r,
   /usr/share/glib-2.0/schemas/gschemas.compiled r,
   /usr/share/sounds/freedesktop/index.theme 	r,
   /usr/share/sounds/freedesktop/stereo/dialog-warning.oga   r,
   /usr/local/share/locale/de_DE/LC_MESSAGES/grsync.mo r,
+  /usr/share/themes/Default/gtk-3.0/*.css r,
   /usr/share/X11/xkb/keycodes/* r,
 
   /home/{,**}  r,
@@ -124,6 +124,11 @@ profile grsync /{{,usr/}bin/rsync,{,usr/}bin/grsync,{,usr/}bin/grsync} flags=(at
   owner @{PROC}/@{pid}/mountinfo 	r,
   owner @{PROC}/@{pid}/cgroup 		r,
 
+  @{run}/ 				r,
+  @{run}/media/				r,
+  @{run}/media/user/			r,
+  @{run}/media/admin/			r,
+#  @{run}/media/{,**}			r,
   @{run}/mount/utab 			r,
   owner @{run}/user/@{uid}/pulse/ 	rw,
   owner @{run}/user/@{uid}/dconf/user 	rw,
