@@ -7,25 +7,24 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_pathmeld} = @{bin}/meld
+@{exec_path} = @{bin}/meld
 @{att} = /
-profile meld @{exec_pathmeld} flags=(attach_disconnected, attach_disconnected.path=@{att}) {
+profile meld /{,usr/}bin/meld flags=(attach_disconnected, attach_disconnected.path=@{att}) {
   include <abstractions/attached/base>
   include <abstractions/audio-client>
   include <abstractions/app/bwrap-glycin>
   include <abstractions/attached/consoles>
   include <abstractions/dbus-session>
-  include <abstractions/freedesktop.org>
   include <abstractions/fonts>
-  include <abstractions/gtk>
+  include <abstractions/gtk-strict>
   include <abstractions/python>
-  include <abstractions/qt5>
-  include <abstractions/X-strict>
+  include <abstractions/qt>
   include <abstractions/attached/nameservice-strict>
   include <abstractions/dconf>
   include <abstractions/cups-client>
   include <abstractions/user-read-strict>
   include <abstractions/user-write-strict>
+  include <abstractions/X-strict>
 
   signal (read) set=(kill,term) peer=lxqt-session,
 
@@ -43,7 +42,7 @@ profile meld @{exec_pathmeld} flags=(attach_disconnected, attach_disconnected.pa
   	interface="org.gtk.{Actions,Application}"
   	peer=(name=":[0-9]*.[0-9]*",label=@{profile_name}),
 
-  @{exec_pathmeld}					mr,
+  @{exec_path}					mr,
 
   @{bin}/bwrap                          Px -> meld//&glycin,
   @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> meld//&glycin//&glycin//loaders,
@@ -56,8 +55,9 @@ profile meld @{exec_pathmeld} flags=(attach_disconnected, attach_disconnected.pa
 
   / r,
  
-  /usr/share/gvfs/remote-volume-monitors/		r,
   /usr/bin/						r,
+  /usr/share/glib-2.0/schemas/gschemas.compiled 	r,
+  /usr/share/gvfs/remote-volume-monitors/		r,
   /usr/share/meld/{,**}					r,
   /usr/share/gtksourceview-[2-9]*/{,**}			r,	
   /usr/lib/cairo/{,**/}					w,	
@@ -78,8 +78,8 @@ profile meld @{exec_pathmeld} flags=(attach_disconnected, attach_disconnected.pa
   owner @{run}/user/@{uid}/dconf/user rw,
 
   /tmp/							r,
-  owner /tmp/@{int}					rw,	
-  owner /tmp/@{rand8}					rw,
+  owner @{tmp}/@{int}					rw,	
+  owner @{tmp}/@{rand8}					rw,
 
   owner @{PROC}/@{pid}/fd/				r,
   owner @{PROC}/@{pid}/cgroup 				r,
