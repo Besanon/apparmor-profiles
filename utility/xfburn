@@ -1,36 +1,38 @@
 # apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2017 Kurinnoi
 # Copyright (C) 2024 Alexandre Pujol <alexandre@pujol.io>
-# Copyright (C) 2024 Besanon  <m231009ts@mailfence.com>
+# Copyright (C) 2026 Besanon <set508@proton.me>
 # SPDX-License-Identifier: GPL-2.0-only
 
 abi <abi/4.0>,
 
 include <tunables/global>
 
-@{exec_pathxf} = @{bin}/xfburn
+@{exec_path} = @{bin}/xfburn
 
 @{USERS_DIR_rk}="[^.]**"
 @{USERS_FILE_rk}="[^.]*"
 
-profile xfburn @{exec_pathxf} {
-  include <abstractions/base>
+@{att} = ""
+profile xfburn /{,usr/}bin/xfburn flags=(attach_disconnected) {
+  include <abstractions/attached/base>
   include <abstractions/app/bwrap-glycin>
   include <abstractions/bus-accessibility>
-  include <abstractions/consoles>
+  include <abstractions/attached/consoles>
   include <abstractions/dconf-write>
   include <abstractions/freedesktop.org>
   include <abstractions/fonts>
-  include <abstractions/gtk>
+  include <abstractions/gtk-strict>
   include <abstractions/graphics>
-  include <abstractions/nameservice-strict>
+  include <abstractions/attached/nameservice-strict>
+  include <abstractions/wayland-strict>
   include <abstractions/X-strict>
   
   network netlink raw,
 
   signal (receive) peer=lxqt-session,
   
-  @{bin}/xfburn					mr,
+  @{exec_path}					mr,
 
   @{bin}/bwrap                          Px -> xfburn//&glycin,
   @{lib}/glycin-loaders/@{d}+/glycin-*  Px -> xfburn//&glycin//&glycin//loaders,
@@ -40,6 +42,7 @@ profile xfburn @{exec_pathxf} {
   /usr/share/xfburn/{,**}				r,
   /usr/share/ladspa/rdf/{,**}				r,
   /usr/libexec/gvfsd-burn				r,	
+  /usr/share/sounds/freedesktop/index.theme 		r,
   
   /etc/udev/udev.conf					r,
   /etc/fstab 						r,
@@ -79,6 +82,9 @@ profile xfburn @{exec_pathxf} {
   @{sys}/devices/@{pci}/ata2/host1/target1:0:0/1:0:0:0/model r,
   @{sys}/devices/@{pci}/ata2/host1/target1:0:0/1:0:0:0/rev r,
   @{sys}/devices/@{pci_bus}/uevent r,
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/cpu.max r,
 
   @{PROC}/@{pid}/fd/					r,
   @{PROC}/@{pid}/cgroup 				r,
@@ -103,7 +109,11 @@ profile xfburn @{exec_pathxf} {
   /dev/sr@{int}  rwk,
   /dev/video@{int} rwk,
 
-  owner /tmp/orcexec.@{rand6} rw,
+  owner @{tmp}/orcexec.@{rand6} rw,
+
+  deny /etc/machine-id r,
+
+  include if exists <local/xfburn>
 }
 
 # vim:syntax=apparmor
