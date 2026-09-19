@@ -11,6 +11,7 @@ include <tunables/global>
 @{att} = /
 profile gucharmap @{exec_pathGUC} flags=(attach_disconnected, attach_disconnected.path=@{att}) {
   include <abstractions/attached/base>
+  include <abstractions/audio-client>
   include <abstractions/app/bwrap-glycin>
   include <abstractions/attached/consoles>
   include <abstractions/dconf>
@@ -20,6 +21,7 @@ profile gucharmap @{exec_pathGUC} flags=(attach_disconnected, attach_disconnecte
   include <abstractions/fontconfig-cache-read>
   include <abstractions/mime>
   include <abstractions/attached/nameservice-strict>
+  include <abstractions/wayland-strict>
   include <abstractions/X-strict>
 
   signal (read) set=(kill,term) peer=lxqt-session,
@@ -37,6 +39,9 @@ profile gucharmap @{exec_pathGUC} flags=(attach_disconnected, attach_disconnecte
   / r,
 
   owner @{user_share_dirs}/sddm/wayland-session.log w,
+  owner @{user_share_dirs}/sddm/xorg-session.log w,
+
+  owner @{user_cache_dirs}/event-sound-cache.tdb.host.@{arch}-pc-linux-gnu rwk,
 
   @{PROC}/@{pid}/cgroup r,
   owner @{PROC}/@{pid}/maps r,
@@ -45,8 +50,11 @@ profile gucharmap @{exec_pathGUC} flags=(attach_disconnected, attach_disconnecte
   @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
   @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
 
-  owner /tmp/gdk-pixbuf-glycin-tmp.@{rand6} rw,
+  owner @{tmp}/gdk-pixbuf-glycin-tmp.@{rand6} rw,
 
+  deny /etc/machine-id r,
+
+  include if exists <local/gucharmap>
 }
 
 # vim:syntax=apparmor
