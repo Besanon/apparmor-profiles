@@ -12,6 +12,7 @@ include <tunables/global>
 @{att} = /att/abiword/
 profile abiword /{,usr/}bin/abiword flags=(attach_disconnected, attach_disconnected.path=@{att}) {
   include <abstractions/attached/base>
+  include <abstractions/audio-client>
   include <abstractions/attached/consoles>
   include <abstractions/app/bwrap-glycin>
   include <abstractions/bus-session>
@@ -22,12 +23,14 @@ profile abiword /{,usr/}bin/abiword flags=(attach_disconnected, attach_disconnec
   include <abstractions/enchant>
   include <abstractions/fonts-strict>
   include <abstractions/fontconfig-cache-read>
-  include <abstractions/lxqt>
+  include <abstractions/gtk-strict>
   include <abstractions/graphics>
   include <abstractions/attached/nameservice-strict>
   include <abstractions/thumbnails-cache-read>
   include <abstractions/user-read-strict>
   include <abstractions/user-write-strict>
+  include <abstractions/wayland-strict>
+  include <abstractions/X-strict>
   
   signal (read) set=(kill,term) peer=lxqt-session,
 
@@ -45,6 +48,7 @@ profile abiword /{,usr/}bin/abiword flags=(attach_disconnected, attach_disconnec
 
   /usr/share/icons/{,**} r,
   /usr/share/mime/{,**} r,
+  /usr/share/pixmaps/{,**} r,
   /usr/share/thumbnailers/{,**} r,
   /usr/share/libfm-qt6/translations/libfm-qt_de.qm r,
   /usr/share/featherpad/translations/featherpad_de.qm r,
@@ -78,6 +82,7 @@ profile abiword /{,usr/}bin/abiword flags=(attach_disconnected, attach_disconnec
   owner @{tmp}/.gsf-save-@{rand6} rw,
   owner @{tmp}/gtkprint_@{rand6} rw,
   owner @{tmp}/gtkprint_ppd_@{rand6} rw,
+  owner @{tmp}/preview@{rand6}.pdf rw,
 
   @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/session-@{int}.scope/cpu.max r,
   @{sys}/fs/cgroup/user.slice/user-@{uid}.slice/cpu.max r,
