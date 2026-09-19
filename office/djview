@@ -11,7 +11,6 @@ include <tunables/global>
 @{att} = ""
 profile djview /{,usr/}bin/djview {
   include <abstractions/base-strict>
-  include <abstractions/bus-accessibility>
   include <abstractions/bus-session>
   include <abstractions/bus/session/org.freedesktop.portal.Desktop>
   include <abstractions/consoles>
@@ -84,6 +83,7 @@ profile djview /{,usr/}bin/djview {
   owner @{user_share_dirs}/gvfs-metadata/{,*} 	r,
 
   owner @{user_config_dirs}/@{int}	 	rw,
+  owner @{user_config_dirs}/kwinrc r,
   owner @{user_config_dirs}/lxqt/*.conf 	r,
   owner @{user_config_dirs}/QtProject.conf 	rw,
   owner @{user_config_dirs}/QtProject.conf.lock rwk,
