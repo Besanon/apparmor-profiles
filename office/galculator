@@ -19,7 +19,7 @@ profile galculator /{,usr/}bin/galculator flags=(attach_disconnected, attach_dis
   include <abstractions/fonts-strict>
   include <abstractions/gtk-strict>
   include <abstractions/graphics>
-  include <abstractions/qt6>
+  include <abstractions/qt>
   include <abstractions/X-strict>
   include <abstractions/attached/nameservice-strict>
   
@@ -46,7 +46,7 @@ profile galculator /{,usr/}bin/galculator flags=(attach_disconnected, attach_dis
   owner @{user_config_dirs}/pulse/cookie rwk,
 
   owner @{user_share_dirs}/sddm/xorg-session.log w,
-#  owner @{user_share_dirs}/sddm/wayland-session.log w,
+  owner @{user_share_dirs}/sddm/wayland-session.log w,
 
   owner @{user_cache_dirs}/event-sound-cache.tdb.@{hex32}.@{arch}-pc-linux-gnu rwk,
 
